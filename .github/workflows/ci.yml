@@ -3,6 +3,9 @@ on: [push]
 jobs:
   build:
     runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        rid: ["win-x64", "linux-x64"]
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-dotnet@v4
@@ -11,18 +14,19 @@ jobs:
       - run: dotnet restore
       - run: dotnet build
       - run: dotnet test
-      - run: dotnet publish -o app -r linux-x64 --sc /p:PublishSingleFile=true,AssemblyName=app
-      - run: tar cf app.tar app/
+      - run: dotnet publish -o app-${{ matrix.rid }} -r ${{ matrix.rid }} --sc /p:PublishSingleFile=true,AssemblyName=app
+      - run: tar cf app-${{ matrix.rid }}.tar app-${{ matrix.rid }}/
       - uses: actions/upload-artifact@v4
         with:
-          name: app.tar
-          path: app.tar
+          name: app-${{ matrix.rid }}
+          path: app-${{ matrix.rid }}.tar
   test:
     needs: build
     runs-on: ubuntu-latest
     steps:
       - uses: actions/download-artifact@v4
         with:
-          name: app.tar
-      - run: tar xf app.tar
-      - run: ./app/app
+          name: app-linux-x64
+      - run: tar xf app-linux-x64.tar
+      - run: chmod +x app-linux-x64/app
+      - run: ./app-linux-x64/app
