@@ -5,10 +5,24 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - name: build using gcc
-        run: gcc -Wall -Werror main.c -o program
-      - name: Archive production artifacts
-        uses: actions/upload-artifact@v4
+      - uses: actions/setup-dotnet@v4
         with:
-          name: program
-          path: program
+          dotnet-version: '8.0.x'
+      - run: dotnet restore
+      - run: dotnet build
+      - run: dotnet test
+      - run: dotnet publish -o app -r linux-x64 --sc /p:PublishSingleFile=true,AssemblyName=app
+      - run: tar cf app.tar app/
+      - uses: actions/upload-artifact@v4
+        with:
+          name: app.tar
+          path: app.tar
+  test:
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          name: app.tar
+      - run: tar xf app.tar
+      - run: ./app/app
